@@ -43,12 +43,16 @@
     .pane { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; padding: 20px; }
     .pane.active { display: block; }
 
-    /* SUITE 1: LIVE INTERFACE */
+    /* SUITE 1: TACTICAL LIVE STRIPS */
     .strip { background: var(--bg-surface); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
     .btn { background: var(--bg-element); border: 1px solid var(--glass-border); color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer; min-height: 44px; font-weight: bold; }
-    .btn-rec.active { background: #ff3b30; box-shadow: 0 0 12px #ff3b30; }
+    
+    /* Hardware Action Cues */
+    .btn-rec[data-state="armed"] { background: #e6a100; color: #000; box-shadow: 0 0 10px #e6a100; }
+    .btn-rec[data-state="recording"] { background: #ff3b30; color: #fff; box-shadow: 0 0 12px #ff3b30; }
+    .btn-rec[data-state="playing"] { background: rgba(201, 125, 90, 0.2); color: var(--clr-live-copper); border-color: var(--clr-live-copper); }
 
-    /* SUITE 2: WAVE INTERFACE */
+    /* SUITE 2: WAVE LAYOUTS */
     .wave-box { height: 180px; background: #000; border-radius: 12px; margin-bottom: 20px; position: relative; border: 1px dashed var(--glass-border); }
     .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; height: calc(100% - 210px); }
     .pad { background: var(--bg-surface); border: 1px solid var(--glass-border); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; min-height: 60px; }
@@ -59,6 +63,7 @@
 
   <header>
     <div class="brand">NEUSICAL</div>
+    <div style="font-family: monospace; font-size: 13px; color: var(--clr-live-copper);" id="clockReadout">BAR: 1 . Beat: 1</div>
     <div class="transport">
       <label>BPM</label>
       <input type="range" id="bpm" min="60" max="200" value="120">
@@ -72,19 +77,22 @@
   </header>
 
   <main>
-    <!-- SUITE 1: REGGIE WATTS LOOPER -->
+    <!-- SUITE 1: LIVE LOOPER ENGINE -->
     <div class="pane active" id="view-live">
-      <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; letter-spacing:0.1em;">SUITE 01 // LIVE LOOP PERFORMANCE ENGINE</div>
-      <div class="strip"><span>TRACK 01 // LEAD</span><button class="btn btn-rec" onclick="toggleRec(1, this)">REC</button></div>
-      <div class="strip"><span>TRACK 02 // BASS</span><button class="btn btn-rec" onclick="toggleRec(2, this)">REC</button></div>
-      <div class="strip"><span>TRACK 03 // PERC</span><button class="btn btn-rec" onclick="toggleRec(3, this)">REC</button></div>
-      <div class="strip"><span>TRACK 04 // VOX</span><button class="btn btn-rec" onclick="toggleRec(4, this)">REC</button></div>
-      <div class="strip"><span>TRACK 05 // FX</span><button class="btn btn-rec" onclick="toggleRec(5, this)">REC</button></div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; letter-spacing:0.1em; display:flex; justify-content:space-between;">
+        <span>SUITE 01 // HIGH-PRECISION LOCK PERFORMANCE LOOPER</span>
+        <span id="engineStatus" style="color:var(--clr-live-copper);">AUDIO ENGINE IDLE</span>
+      </div>
+      <div class="strip"><span>TRACK 01 // LEAD</span><button class="btn btn-rec" data-track="0" data-state="empty" onclick="triggerTrack(0, this)">REC</button></div>
+      <div class="strip"><span>TRACK 02 // BASS</span><button class="btn btn-rec" data-track="1" data-state="empty" onclick="triggerTrack(1, this)">REC</button></div>
+      <div class="strip"><span>TRACK 03 // PERC</span><button class="btn btn-rec" data-track="2" data-state="empty" onclick="triggerTrack(2, this)">REC</button></div>
+      <div class="strip"><span>TRACK 04 // VOX</span><button class="btn btn-rec" data-track="3" data-state="empty" onclick="triggerTrack(3, this)">REC</button></div>
+      <div class="strip"><span>TRACK 05 // FX</span><button class="btn btn-rec" data-track="4" data-state="empty" onclick="triggerTrack(4, this)">REC</button></div>
     </div>
 
-    <!-- SUITE 2: DILLA WAVE SAMPLER -->
+    <!-- SUITE 2: WAVE SAMPLER -->
     <div class="pane" id="view-wave">
-      <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; letter-spacing:0.1em;">SUITE 02 // MICRO-CHOP DISPLAY CANVAS</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; letter-spacing:0.1em;">SUITE 02 // WAVE SAMPLER</div>
       <div class="wave-box"><canvas id="wv" style="width:100%; height:100%;"></canvas></div>
       <div class="grid">
         <div class="pad">01</div><div class="pad">02</div><div class="pad">03</div><div class="pad">04</div>
@@ -94,9 +102,9 @@
       </div>
     </div>
 
-    <!-- SUITE 3: LINEAR ARRANGEMENT LAB -->
+    <!-- SUITE 3: STUDIO TIMELINE -->
     <div class="pane" id="view-studio">
-      <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; letter-spacing:0.1em;">SUITE 03 // LINEAR PRODUCTION TRACKS</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; letter-spacing:0.1em;">SUITE 03 // STUDIO LINEAR LAB</div>
       <div style="background:var(--bg-surface); height:80%; border-radius:12px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); border: 1px solid var(--glass-border);">
         Timeline and Master Mixing Console Stubs Active
       </div>
@@ -104,25 +112,82 @@
   </main>
 
   <script>
-    let actCtx = null;
-    function toggleRec(trackNum, element) {
-      if (!actCtx) actCtx = new (window.AudioContext || window.webkitAudioContext)();
-      element.classList.toggle('active');
-      element.textContent = element.classList.contains('active') ? 'STOP' : 'REC';
+    // --- HIGH PRECISION WEB AUDIO SCHEDULER ENGINE ---
+    let audioCtx = null;
+    let micStream = null;
+    let micSource = null;
+    let scriptNode = null; // Recording buffer processor
+
+    let bpm = 120;
+    let lookAhead = 25.0; // Milliseconds lookahead timing loop window
+    let scheduleAheadTime = 0.1; // Scheduling timeline vector target
+    let nextNoteTime = 0.0; // Exactly when the next beat boundary hits
+    let currentBeat = 0;
+    let masterLoopLengthBeats = 16; // 4 Bars fixed master loop block template
+    let timerId = null;
+
+    // Data Structures tracking individual loop layers
+    let tracks = Array.from({ length: 5 }, () => ({
+      state: 'empty', // empty -> armed -> recording -> playing
+      audioBuffers: [], // Holds raw input layer sequences
+      playbackBuffer: null,
+      sourceNode: null
+    }));
+
+    let activeRecordTrack = null;
+    let tempRecordingBuffer = [];
+
+    async function initAudioEngine() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        micSource = audioCtx.createMediaStreamSource(micStream);
+        
+        // Setup raw data buffer processor
+        scriptNode = audioCtx.createScriptProcessor(4096, 1, 1);
+        scriptNode.onaudioprocess = handleAudioCapture;
+        micSource.connect(scriptNode);
+        scriptNode.connect(audioCtx.destination);
+        
+        document.getElementById('engineStatus').textContent = "HARDWARE ENGINE ONLINE";
+        startScheduler();
+      } catch (e) {
+        console.error(e);
+        document.getElementById('engineStatus').textContent = "MIC CAPTURE DENIED";
+      }
     }
 
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById(`view-${tab.dataset.suite}`).classList.add('active');
-      });
-    });
+    function startScheduler() {
+      nextNoteTime = audioCtx.currentTime;
+      runSchedulerLoop();
+    }
 
-    const sld = document.getElementById('bpm');
-    const lbl = document.getElementById('bpmVal');
-    sld.addEventListener('input', (e) => lbl.textContent = e.target.value);
-  </script>
-</body>
-</html>
+    function runSchedulerLoop() {
+      while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
+        scheduleTimelineEvent(currentBeat, nextNoteTime);
+        advanceBeatClock();
+      }
+      timerId = setTimeout(runSchedulerLoop, lookAhead);
+    }
+
+    function advanceBeatClock() {
+      const secondsPerBeat = 60.0 / bpm;
+      nextNoteTime += secondsPerBeat;
+      currentBeat = (currentBeat + 1) % masterLoopLengthBeats;
+    }
+
+    function scheduleTimelineEvent(beat, time) {
+      // Synchronize Visual Metronome Clock Parameters
+      const bar = Math.floor(beat / 4) + 1;
+      const beatInBar = (beat % 4) + 1;
+      document.getElementById('clockReadout').textContent = `BAR: ${bar} . Beat: ${beatInBar}`;
+
+      // Quantized Execution Boundaries Engine Loops
+      if (beat === 0) {
+        // Trigger synchronized start/stop states exactly on beat boundaries
+        tracks.forEach((track, index) => {
+          if (track.state === 'armed') {
+            startRecordingSession(index);
+          } else if (track.state === 'recording') {
