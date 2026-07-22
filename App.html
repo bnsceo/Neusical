@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Neusical — LIVE · WAVE · STUDIO</title>
+  <style>
+    :root {
+      --bg-absolute: #07080a;
+      --bg-surface: #12161a;
+      --bg-element: #1c232b;
+      --text-main: #f5f6f7;
+      --text-muted: #8a96a3;
+      --glass-border: rgba(255, 255, 255, 0.06);
+      --clr-live-copper: #c97d5a;
+      --clr-wave-silver: #b0b3b2;
+      --clr-studio-gold: #d4a574;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html {
+      width: 100vw; height: 100dvh; background: var(--bg-absolute);
+      font-family: system-ui, -apple-system, sans-serif; color: var(--text-main); overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    header {
+      height: 54px; background: var(--bg-surface); border-bottom: 1px solid var(--glass-border);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 20px; user-select: none;
+    }
+    .brand { font-weight: 800; letter-spacing: 0.15em; font-size: 14px; }
+    .transport { display: flex; align-items: center; gap: 10px; background: var(--bg-element); padding: 4px 12px; border-radius: 6px; border: 1px solid var(--glass-border); }
+    .transport label { font-size: 10px; text-transform: uppercase; color: var(--text-muted); }
+    .switcher { display: flex; gap: 6px; }
+    .tab {
+      background: transparent; border: 1px solid transparent; color: var(--text-muted);
+      padding: 0 16px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+      border-radius: 6px; cursor: pointer; min-height: 44px; display: flex; align-items: center;
+    }
+    .tab[data-suite="live"].active { color: var(--clr-live-copper); border-color: rgba(201, 125, 90, 0.3); background: rgba(201, 125, 90, 0.08); }
+    .tab[data-suite="wave"].active { color: var(--clr-wave-silver); border-color: rgba(176, 179, 178, 0.3); background: rgba(176, 179, 178, 0.08); }
+    .tab[data-suite="studio"].active { color: var(--clr-studio-gold); border-color: rgba(212, 165, 116, 0.3); background: rgba(212, 165, 116, 0.08); }
+    
+    main { flex: 1; position: relative; width: 100%; }
+    .pane { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; padding: 20px; }
+    .pane.active { display: block; }
+
+    /* SUITE 1: LIVE INTERFACE */
+    .strip { background: var(--bg-surface); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .btn { background: var(--bg-element); border: 1px solid var(--glass-border); color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer; min-height: 44px; font-weight: bold; }
+    .btn-rec.active { background: #ff3b30; box-shadow: 0 0 12px #ff3b30; }
+
+    /* SUITE 2: WAVE INTERFACE */
+    .wave-box { height: 180px; background: #000; border-radius: 12px; margin-bottom: 20px; position: relative; border: 1px dashed var(--glass-border); }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; height: calc(100% - 210px); }
+    .pad { background: var(--bg-surface); border: 1px solid var(--glass-border); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; min-height: 60px; }
+    .pad:active { background: var(--clr-wave-silver); color: #000; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">NEUSICAL</div>
+    <div class="transport">
+      <label>BPM</label>
+      <input type="range" id="bpm" min="60" max="200" value="120">
+      <span id="bpmVal" style="font-family:monospace; font-weight:bold;">120</span>
+    </div>
+    <nav class="switcher">
+      <button class="tab active" data-suite="live">LIVE</button>
+      <button class="tab" data-suite="wave">WAVE</button>
+      <button class="tab" data-suite="studio">STUDIO</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- SUITE 1: REGGIE WATTS LOOPER -->
+    <div class="pane active" id="view-live">
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; letter-spacing:0.1em;">SUITE 01 // LIVE LOOP PERFORMANCE ENGINE</div>
+      <div class="strip"><span>TRACK 01 // LEAD</span><button class="btn btn-rec" onclick="toggleRec(1, this)">REC</button></div>
+      <div class="strip"><span>TRACK 02 // BASS</span><button class="btn btn-rec" onclick="toggleRec(2, this)">REC</button></div>
+      <div class="strip"><span>TRACK 03 // PERC</span><button class="btn btn-rec" onclick="toggleRec(3, this)">REC</button></div>
+      <div class="strip"><span>TRACK 04 // VOX</span><button class="btn btn-rec" onclick="toggleRec(4, this)">REC</button></div>
+      <div class="strip"><span>TRACK 05 // FX</span><button class="btn btn-rec" onclick="toggleRec(5, this)">REC</button></div>
+    </div>
+
+    <!-- SUITE 2: DILLA WAVE SAMPLER -->
+    <div class="pane" id="view-wave">
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; letter-spacing:0.1em;">SUITE 02 // MICRO-CHOP DISPLAY CANVAS</div>
+      <div class="wave-box"><canvas id="wv" style="width:100%; height:100%;"></canvas></div>
+      <div class="grid">
+        <div class="pad">01</div><div class="pad">02</div><div class="pad">03</div><div class="pad">04</div>
+        <div class="pad">05</div><div class="pad">06</div><div class="pad">07</div><div class="pad">08</div>
+        <div class="pad">09</div><div class="pad">10</div><div class="pad">11</div><div class="pad">12</div>
+        <div class="pad">13</div><div class="pad">14</div><div class="pad">15</div><div class="pad">16</div>
+      </div>
+    </div>
+
+    <!-- SUITE 3: LINEAR ARRANGEMENT LAB -->
+    <div class="pane" id="view-studio">
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; letter-spacing:0.1em;">SUITE 03 // LINEAR PRODUCTION TRACKS</div>
+      <div style="background:var(--bg-surface); height:80%; border-radius:12px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); border: 1px solid var(--glass-border);">
+        Timeline and Master Mixing Console Stubs Active
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let actCtx = null;
+    function toggleRec(trackNum, element) {
+      if (!actCtx) actCtx = new (window.AudioContext || window.webkitAudioContext)();
+      element.classList.toggle('active');
+      element.textContent = element.classList.contains('active') ? 'STOP' : 'REC';
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`view-${tab.dataset.suite}`).classList.add('active');
+      });
+    });
+
+    const sld = document.getElementById('bpm');
+    const lbl = document.getElementById('bpmVal');
+    sld.addEventListener('input', (e) => lbl.textContent = e.target.value);
+  </script>
+</body>
+</html>
