@@ -144,7 +144,7 @@
       try {
         micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         micSource = audioCtx.createMediaStreamSource(micStream);
-        
+         
         // Setup raw data buffer processor
         scriptNode = audioCtx.createScriptProcessor(4096, 1, 1);
         scriptNode.onaudioprocess = handleAudioCapture;
