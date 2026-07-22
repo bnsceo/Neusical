@@ -43,20 +43,23 @@
     .pane { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; padding: 20px; }
     .pane.active { display: block; }
 
-    /* SUITE 1: TACTICAL LIVE STRIPS */
+    /* SUITE 1: REGGIE LOOPER STRIPS */
     .strip { background: var(--bg-surface); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
     .btn { background: var(--bg-element); border: 1px solid var(--glass-border); color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer; min-height: 44px; font-weight: bold; }
-    
-    /* Hardware Action Cues */
     .btn-rec[data-state="armed"] { background: #e6a100; color: #000; box-shadow: 0 0 10px #e6a100; }
     .btn-rec[data-state="recording"] { background: #ff3b30; color: #fff; box-shadow: 0 0 12px #ff3b30; }
     .btn-rec[data-state="playing"] { background: rgba(201, 125, 90, 0.2); color: var(--clr-live-copper); border-color: var(--clr-live-copper); }
 
-    /* SUITE 2: WAVE LAYOUTS */
-    .wave-box { height: 180px; background: #000; border-radius: 12px; margin-bottom: 20px; position: relative; border: 1px dashed var(--glass-border); }
-    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; height: calc(100% - 210px); }
-    .pad { background: var(--bg-surface); border: 1px solid var(--glass-border); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; min-height: 60px; }
-    .pad:active { background: var(--clr-wave-silver); color: #000; }
+    /* SUITE 2: HIGH-RES SAMPLER GRAPHICS */
+    .wave-box { height: 160px; background: #000; border-radius: 12px; margin-bottom: 15px; position: relative; border: 1px solid var(--glass-border); overflow: hidden; }
+    #waveformCanvas { width: 100%; height: 100%; display: block; }
+    .canvas-overlay-text { position: absolute; bottom: 8px; right: 12px; font-size: 10px; font-family: monospace; color: var(--text-muted); }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; height: calc(100% - 195px); }
+    .pad { background: var(--bg-surface); border: 1px solid var(--glass-border); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; min-height: 54px; transition: all 0.1s linear; }
+    .pad .pad-lbl { font-size: 12px; }
+    .pad .pad-pos { font-size: 9px; font-family: monospace; color: var(--text-muted); margin-top: 2px; }
+    .pad.has-chop { border-color: rgba(176, 179, 178, 0.4); background: var(--bg-element); }
+    .pad.firing { background: var(--clr-wave-silver) !important; color: #000 !important; box-shadow: 0 0 12px var(--clr-wave-silver); }
   </style>
 </head>
 <body>
@@ -90,15 +93,18 @@
       <div class="strip"><span>TRACK 05 // FX</span><button class="btn btn-rec" data-track="4" data-state="empty" onclick="triggerTrack(4, this)">REC</button></div>
     </div>
 
-    <!-- SUITE 2: WAVE SAMPLER -->
+    <!-- SUITE 2: DILLA WAVE SAMPLER -->
     <div class="pane" id="view-wave">
-      <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; letter-spacing:0.1em;">SUITE 02 // WAVE SAMPLER</div>
-      <div class="wave-box"><canvas id="wv" style="width:100%; height:100%;"></canvas></div>
-      <div class="grid">
-        <div class="pad">01</div><div class="pad">02</div><div class="pad">03</div><div class="pad">04</div>
-        <div class="pad">05</div><div class="pad">06</div><div class="pad">07</div><div class="pad">08</div>
-        <div class="pad">09</div><div class="pad">10</div><div class="pad">11</div><div class="pad">12</div>
-        <div class="pad">13</div><div class="pad">14</div><div class="pad">15</div><div class="pad">16</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; letter-spacing:0.1em; display:flex; justify-content:space-between;">
+        <span>SUITE 02 // MICRO-CHOP DISPLAY CANVAS</span>
+        <span id="chopStatus" style="color:var(--clr-wave-silver);">DOUBLE-TAP WAVE TO CHOP MULTI-PADS</span>
+      </div>
+      <div class="wave-box" id="canvasBox">
+        <canvas id="waveformCanvas"></canvas>
+        <span class="canvas-overlay-text" id="canvasMeta">NO AUDIO PACKET FOUND</span>
+      </div>
+      <div class="grid" id="padGridContainer">
+        <!-- 16 Hardware Performance pads generated dynamically via processing script -->
       </div>
     </div>
 
@@ -112,30 +118,33 @@
   </main>
 
   <script>
-    // --- HIGH PRECISION WEB AUDIO SCHEDULER ENGINE ---
+    // --- HIGH-PRECISION WEB AUDIO SCHEDULER ENGINE ---
     let audioCtx = null;
     let micStream = null;
     let micSource = null;
-    let scriptNode = null; // Recording buffer processor
+    let scriptNode = null;
 
     let bpm = 120;
-    let lookAhead = 25.0; // Milliseconds lookahead timing loop window
-    let scheduleAheadTime = 0.1; // Scheduling timeline vector target
-    let nextNoteTime = 0.0; // Exactly when the next beat boundary hits
+    let lookAhead = 25.0;
+    let scheduleAheadTime = 0.1;
+    let nextNoteTime = 0.0;
     let currentBeat = 0;
-    let masterLoopLengthBeats = 16; // 4 Bars fixed master loop block template
+    let masterLoopLengthBeats = 16;
     let timerId = null;
 
-    // Data Structures tracking individual loop layers
     let tracks = Array.from({ length: 5 }, () => ({
-      state: 'empty', // empty -> armed -> recording -> playing
-      audioBuffers: [], // Holds raw input layer sequences
+      state: 'empty',
       playbackBuffer: null,
       sourceNode: null
     }));
 
     let activeRecordTrack = null;
     let tempRecordingBuffer = [];
+    
+    // --- WAVE DISCOVERY & CHOP ENGINE STATES ---
+    let canvas, cvCtx;
+    let loadedWaveBuffer = null;
+    let sliceMarkers = []; // Normalized positions (0.0 to 1.0)
 
     async function initAudioEngine() {
       if (audioCtx) return;
@@ -144,8 +153,7 @@
       try {
         micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         micSource = audioCtx.createMediaStreamSource(micStream);
-         
-        // Setup raw data buffer processor
+        
         scriptNode = audioCtx.createScriptProcessor(4096, 1, 1);
         scriptNode.onaudioprocess = handleAudioCapture;
         micSource.connect(scriptNode);
@@ -179,15 +187,9 @@
     }
 
     function scheduleTimelineEvent(beat, time) {
-      // Synchronize Visual Metronome Clock Parameters
       const bar = Math.floor(beat / 4) + 1;
       const beatInBar = (beat % 4) + 1;
       document.getElementById('clockReadout').textContent = `BAR: ${bar} . Beat: ${beatInBar}`;
 
-      // Quantized Execution Boundaries Engine Loops
       if (beat === 0) {
-        // Trigger synchronized start/stop states exactly on beat boundaries
         tracks.forEach((track, index) => {
-          if (track.state === 'armed') {
-            startRecordingSession(index);
-          } else if (track.state === 'recording') {
